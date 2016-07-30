@@ -1,4 +1,5 @@
 addpath 'libs';
+addpath 'tools';
 javaaddpath('libs/lib/httpclient-4.3.3.jar');
 javaaddpath('libs/lib/httpclient-cache-4.3.3.jar');
 javaaddpath('libs/lib/commons-cli-1.2.jar');
