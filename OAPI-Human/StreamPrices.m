@@ -5,11 +5,11 @@ end
 SPrices = [];
 SPricesT = [];
 ii = 0;
-tic
 if strcmp(output,'plot')
     h = animatedline('Color','r');
     g = animatedline('Color','g');
 end
+tic
 if time ~= 0
     while toc < time
         SPricesT = [SPricesT,GetPrices(api,PairString)];

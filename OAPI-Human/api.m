@@ -34,15 +34,18 @@ classdef api
                     Request = ['v1/accounts/',api.accountId,'/transactions'];
                 end
                 TransactionHistory = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
-                for ii = 1:length(TransactionHistory)
-                    TransactionHistory.transactions{ii}.id = num2str(TransactionHistory.transactions{ii}.id);
+                if isfield(TransactionHistory,'code')
+                    fprintf('OANDA ERROR:\ncode: %s\n%s\n',num2str(TransactionHistory.code),TransactionHistory.message);
+                else
+                    for ii = 1:length(TransactionHistory)
+                        TransactionHistory.transactions{ii}.id = num2str(TransactionHistory.transactions{ii}.id);
+                    end
                 end
             end
 %% GetTransactionInfo
             function TransactionInfo = GetTransactionInfo(api,id)
                 Request = ['v1/accounts/',api.accountId,'/transactions/',id];
                 TransactionInfo = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
-                TransactionInfo.id = num2str(TransactionInfo.id);
             end
 %% GetInstruments         return the tradable pairs for a particular account
             function Instruments = GetInstruments(api,accountId)
@@ -50,26 +53,23 @@ classdef api
                 Instruments = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
             end
 %% GetOrders
-            function Orders = GetOrders(api,accountId)
+            function RawOrders = GetOrders(api,accountId)
                 Request = ['v1/accounts/',accountId,'/orders'];
-                Orders = loadjson(urlread2([api.server,Request],'Get','',api.Auth_Header));
+                RawOrders = loadjson(urlread2([api.server,Request],'Get','',api.Auth_Header));
             end
 %% GetTrades         
-            function TradeBook = GetTrades(api,accountId)
+            function RawTrades = GetTrades(api,accountId)
                 Request = ['v1/accounts/',accountId,'/trades'];
-                TradeBook = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
-                if isempty(TradeBook.trades)
+                RawTrades = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
+                if isfield(RawTrades,'code')
+                    fprintf('OANDA ERROR:\ncode: %s\n%s\n',num2str(RawTrades.code),RawTrades.message);
+                elseif isempty(RawTrades.trades)
                     fprintf('There are no open trades to return\n')
-                    TradeBook = 0;
-                else
-                    for ii = 1:length(TradeBook)
-                        TradeBook.trades{1,ii}.id = num2str(TradeBook.trades{1,ii}.id);
-                    end
                 end
             end
-%% GetHistory      Get the history of particular instrument
-            function History = GetHistory(api,instrument,granularity,count)
-                Request = ['v1/candles?instrument=',instrument,'&count=',count,'&granularity=',granularity];
+%% GetHistory
+            function History = GetHistory(api,PairString,granularity,count)
+                Request = ['v1/candles?instrument=',PairString,'&count=',count,'&granularity=',granularity];
                 History = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
             end
 %% StreamPrices, doesn't work, the StreamPrices function uses GetPrices above
@@ -88,10 +88,14 @@ classdef api
                 Body = ['instrument=',PairString,'&units=',units,'&side=',side,'&type=market', ...
                     '&stopLoss=',stopLoss,'&takeProfit=',takeProfit,'&trailingStop=',trailingStop];
                 TheOrder = loadjson(urlread2([api.server,Request],'POST',Body,api.Auth_Header));
-                TheOrder.tradeOpened.id = num2str(TheOrder.tradeOpened.id);
+                if isfield(TheOrder,'code')
+                    fprintf('OANDA ERROR:\ncode: %s\n%s\n',num2str(TheOrder.code),TheOrder.message);
+                else
+                    TheOrder.tradeOpened.id = num2str(TheOrder.tradeOpened.id);
+                end
             end
 %% ModifyTrade
-            function TradeBook = ModifyTrade(api,id,stopLoss,takeProfit,trailingStop)
+            function TradeInfo = ModifyTrade(api,id,stopLoss,takeProfit,trailingStop)
                 Request = ['v1/accounts/',api.accountId,'/trades/',id];
                 Body_Exists = 0;
                 Body = [];
@@ -122,15 +126,24 @@ classdef api
                     Body = [Body,'trailingStop=',trailingStop];
                 end
                 Headers = [api.Auth_Header;api.Patch_Header];
-                Trade = loadjson(urlread2([api.server,Request],'POST',Body,Headers));
-                TradeBook = GetTrades;
+                TradeInfo = loadjson(urlread2([api.server,Request],'POST',Body,Headers));
+                if isfield(TradeInfo,'code')
+                    fprintf('OANDA ERROR:\ncode: %s\n%s\n',num2str(TradeInfo.code),TradeInfo.message);
+                else
+                    TradeInfo.id = num2str(TradeInfo.id);
+                end
             end
 %% CloseTrade
-            function TradeBook = CloseTrade(api,id)
+            function TradeInfo = CloseTrade(api,id)
                 Request = ['v1/accounts/',api.accountId,'/trades/',id];
                 Headers = [api.Auth_Header;api.Delete_Header];
-                Trade = loadjson(urlread2([api.server,Request],'DELETE','',Headers));
-                TradeBook = GetTrades;
+                TradeInfo = loadjson(urlread2([api.server,Request],'DELETE','',Headers));
+                if isfield(TradeInfo,'code')
+                    fprintf('OANDA ERROR:\ncode: %s\n%s\n',num2str(TradeInfo.code),TradeInfo.message);
+                else
+                    TradeInfo.id = num2str(TradeInfo.id);
+                end
             end
        end
-end       
+end
+       

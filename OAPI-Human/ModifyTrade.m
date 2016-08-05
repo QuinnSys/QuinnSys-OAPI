@@ -1,3 +1,3 @@
-function TradeBook = ModifyTrade(id,stopLoss,takeProfit,trailingStop)
-TradeBook = ModifyTrade(api,id,stopLoss,takeProfit,trailingStop);
+function TradeInfo = ModifyTrade(id,stopLoss,takeProfit,trailingStop)
+TradeInfo = ModifyTrade(api,id,stopLoss,takeProfit,trailingStop);
 end
