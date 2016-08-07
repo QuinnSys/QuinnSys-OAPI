@@ -1,3 +1,3 @@
-function TradeBook = CloseTrade(id)
-TradeBook = CloseTrade(api,id);
+function TradeInfo = CloseTrade(id)
+TradeInfo = CloseTrade(api,id);
 end
