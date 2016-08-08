@@ -17,60 +17,51 @@ classdef api
        end
        methods
 %% GetAccounts        return the accounts associated with the supplied token
-           function ListAccounts = GetAccounts(api)
+           function RawAccounts = GetAccounts(api)
             Request = 'v1/accounts';
-            ListAccounts = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
+            RawAccounts = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
            end
 %% GetAccountInfo     return the information associated with the selected account
-            function AccountInfo = GetAccountInfo(api,accountId)
+            function RawAccountInfo = GetAccountInfo(api,accountId)
                 Request = ['v1/accounts/',accountId];
-                AccountInfo = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
+                RawAccountInfo = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
             end
 %% GetTransactionHistory
-            function TransactionHistory = GetTransactionHistory(api,instrument)
+            function RawTransactionHistory = GetTransactionHistory(api,instrument)
                 if nargin ==2
                     Request = ['v1/accounts/',api.accountId,'/transactions?instrument=',instrument];
                 else
                     Request = ['v1/accounts/',api.accountId,'/transactions'];
                 end
-                TransactionHistory = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
-                for ii = 1:length(TransactionHistory)
-                    TransactionHistory.transactions{ii}.id = num2str(TransactionHistory.transactions{ii}.id);
-                end
+                RawTransactionHistory = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
             end
 %% GetTransactionInfo
-            function TransactionInfo = GetTransactionInfo(api,id)
+            function RawTransactionInfo = GetTransactionInfo(api,id)
                 Request = ['v1/accounts/',api.accountId,'/transactions/',id];
-                TransactionInfo = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
-                TransactionInfo.id = num2str(TransactionInfo.id);
+                RawTransactionInfo = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
             end
 %% GetInstruments         return the tradable pairs for a particular account
-            function Instruments = GetInstruments(api,accountId)
+            function RawInstrumentData = GetInstruments(api,accountId)
                 Request = ['v1/instruments?accountId=',accountId];
-                Instruments = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
+                RawInstrumentData = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
             end
 %% GetOrders
-            function Orders = GetOrders(api,accountId)
+            function RawOrders = GetOrders(api,accountId)
                 Request = ['v1/accounts/',accountId,'/orders'];
-                Orders = loadjson(urlread2([api.server,Request],'Get','',api.Auth_Header));
+                RawOrders = loadjson(urlread2([api.server,Request],'Get','',api.Auth_Header));
             end
 %% GetTrades         
-            function TradeBook = GetTrades(api,accountId)
+            function RawTrades = GetTrades(api,accountId)
                 Request = ['v1/accounts/',accountId,'/trades'];
-                TradeBook = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
-                if isempty(TradeBook.trades)
+                RawTrades = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
+                if isempty(RawTrades.trades)
                     fprintf('There are no open trades to return\n')
-                    TradeBook = 0;
-                else
-                    for ii = 1:length(TradeBook)
-                        TradeBook.trades{1,ii}.id = num2str(TradeBook.trades{1,ii}.id);
-                    end
                 end
             end
-%% GetHistory      Get the history of particular instrument
-            function History = GetHistory(api,instrument,granularity,count)
-                Request = ['v1/candles?instrument=',instrument,'&count=',count,'&granularity=',granularity];
-                History = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
+%% GetHistory
+            function RawHistory = GetHistory(api,PairString,granularity,count)
+                Request = ['v1/candles?instrument=',PairString,'&count=',count,'&granularity=',granularity];
+                RawHistory = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
             end
 %% StreamPrices, doesn't work, the StreamPrices function uses GetPrices above
             function SPrices = StreamPrices(api,PairString)
@@ -78,20 +69,19 @@ classdef api
                 SPrices = loadjson(urlread2([api.stream,Request],'GET','',api.Auth_Header));
             end
 %% GetPrices        return the current prices for a particular pair, e.g EUR_USD
-            function Prices = GetPrices(api,PairString)
+            function RawPrices = GetPrices(api,PairString)
                Request = ['v1/prices?instruments=',PairString];
-               Prices = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
+               RawPrices = loadjson(urlread2([api.server,Request],'GET','',api.Auth_Header));
            end
 %% NewOrder      Only supports market orders
-            function TheOrder = NewOrder(api,PairString,units,side,stopLoss,takeProfit,trailingStop)
+            function RawOrderInfo = NewOrder(api,PairString,units,side,stopLoss,takeProfit,trailingStop)
                 Request = ['v1/accounts/',api.accountId,'/orders'];
                 Body = ['instrument=',PairString,'&units=',units,'&side=',side,'&type=market', ...
                     '&stopLoss=',stopLoss,'&takeProfit=',takeProfit,'&trailingStop=',trailingStop];
-                TheOrder = loadjson(urlread2([api.server,Request],'POST',Body,api.Auth_Header));
-                TheOrder.tradeOpened.id = num2str(TheOrder.tradeOpened.id);
+                RawOrderInfo = loadjson(urlread2([api.server,Request],'POST',Body,api.Auth_Header));
             end
 %% ModifyTrade
-            function TradeBook = ModifyTrade(api,id,stopLoss,takeProfit,trailingStop)
+            function RawTradeInfo = ModifyTrade(api,id,stopLoss,takeProfit,trailingStop)
                 Request = ['v1/accounts/',api.accountId,'/trades/',id];
                 Body_Exists = 0;
                 Body = [];
@@ -122,15 +112,14 @@ classdef api
                     Body = [Body,'trailingStop=',trailingStop];
                 end
                 Headers = [api.Auth_Header;api.Patch_Header];
-                Trade = loadjson(urlread2([api.server,Request],'POST',Body,Headers));
-                TradeBook = GetTrades;
+                RawTradeInfo = loadjson(urlread2([api.server,Request],'POST',Body,Headers));
             end
 %% CloseTrade
-            function TradeBook = CloseTrade(api,id)
+            function RawTradeInfo = CloseTrade(api,id)
                 Request = ['v1/accounts/',api.accountId,'/trades/',id];
                 Headers = [api.Auth_Header;api.Delete_Header];
-                Trade = loadjson(urlread2([api.server,Request],'DELETE','',Headers));
-                TradeBook = GetTrades;
+                RawTradeInfo = loadjson(urlread2([api.server,Request],'DELETE','',Headers));
             end
        end
-end       
+end
+       
