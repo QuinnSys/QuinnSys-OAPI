@@ -1,14 +1,22 @@
-% Get transaction history, instrument is optional
 function TransactionHistory = GetTransactionHistory(instrument)
+% Return the transaction history for the default account
+% Run with no input to retreive all transactions
+%% Input Organization
+%% API Call
 if nargin == 1
-TransactionHistory = GetTransactionHistory(api,instrument);
+    RawTransactionHistory = GetTransactionHistory(api,instrument);
 else
-    TransactionHistory = GetTransactionHistory(api);
+    RawTransactionHistory = GetTransactionHistory(api);
 end
-if isfield(TransactionHistory,'code')
+if isfield(RawTransactionHistory,'code')
+    TransactionHistory = RawTransactionHistory;    
+    fprintf('OANDA ERROR:\ncode: %s\n%s\n',num2str(TransactionHistory.code),TransactionHistory.message);
     return
 end
-transactions = TransactionHistory.transactions;
+%% Output Assignment
+TransactionHistory = RawTransactionHistory.transactions;
+%% Data Massaging
+transactions = TransactionHistory;
 clear TransactionHistory
 %Pre-allocating for speed
 NumTrans = length(transactions);
@@ -30,7 +38,7 @@ TransactionHistory(NumTrans) = struct(...
     'tradeOpened',[],   ...
     'tradeId',[] );
 ii = 0;
-%% Loop to Create Struct Array of Transactions
+% Loop to Create Struct Array of Transactions
 for io = NumTrans:-1:1 %replace with (1:NumTrans) to reverse order
 ii = ii+1;
 %% Entering values of ubiquitus fields
