@@ -1,9 +1,16 @@
-function OrderBook = NewOrder(PairString,units,side,stopLoss,takeProfit,trailingStop)
-side = lower(side);
-TheOrder = NewOrder(api,PairString,units,side,stopLoss,takeProfit,trailingStop);
-if ~exist('OrderBook','var')
-    OrderBook = [];
+function OrderInfo = NewOrder(PairString,units,side,stopLoss,takeProfit,trailingStop)
+% Open a new order and return it's details
+%% Input Organization
+%% API Call
+RawOrderInfo = NewOrder(api,PairString,units,side,stopLoss,takeProfit,trailingStop);
+%% Error Checking and Report Assignment
+if isfield(RawOrderInfo,'code')
+    OrderInfo = RawOrderInfo;
+    fprintf('OANDA ERROR:\ncode: %s\n%s\n',num2str(OrderInfo.code),OrderInfo.message);
+    return
 end
-pos = length(OrderBook) + 1;
-OrderBook{pos} = TheOrder;
+%% Output Assignment
+OrderInfo = RawOrderInfo;
+%% Data Massaging
+OrderInfo.tradeOpened.id = num2str(OrderInfo.tradeOpened.id);
 end
